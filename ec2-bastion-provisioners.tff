@@ -1,0 +1,32 @@
+# Create a null resource and provisioners
+resource "null_resource" "copy_ec2_keys" {
+  depends_on = [module.ec2_instance, aws_eip.lb]
+
+  # Connection block for provisioners to connect to EC2 instance
+  connection {
+    type = "ssh"
+    host = aws_eip.lb.public_ip
+    user = "ec2-user"
+    password = ""
+    private_key = file("private-key/terraform-key.pem")
+  }
+
+  # File provisioner: Copies the terraform-key.pem file to /tmp/terraform-key.pem
+  provisioner "file" {
+    source = "private-key/terraform-key.pem"
+    destination = "/tmp/terraform-key.pem"
+  }
+
+  # Remote exec provisioner: Using remote-exec provisioner fix the private key
+  provisioner "remote-exec" {
+    inline = [
+      "sudo chmod 400 /tmp/terraform-key.pem"
+    ]
+  }
+
+  # Local exec provisioner: local-exec provisioner (Creation-Time provisioner - Triggered during create resource)
+  provisioner "local-exec" {
+    command = "echo VPC created on `date` and VPC id: ${module.vpc.vpc_id} >> creation-time-vpc-id.txt"
+    working_dir = "local-exec-output-files/"
+  }
+}

@@ -1,0 +1,6 @@
+resource "aws_eip" "lb" {
+  depends_on = [module.ec2_instance, module.vpc]
+  instance = module.ec2_instance.id
+  vpc      = true
+  tags = local.common_tag
+}
